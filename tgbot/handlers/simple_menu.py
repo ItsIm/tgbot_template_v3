@@ -34,7 +34,11 @@ text = """🛍 <b>Интернет-магазин в формате Telegram-б�
 🚀 Приложение постоянно развивается — появляются новые фичи, улучшения и интеграции.  
 💡 Любые доработки и интеграции можно добавить по запросу.
 
-📱 <b>Открывай MiniApp и начинай покупки!</b>"""
+📱 <b>Открывай MiniApp и начинай покупки!</b>
+
+✏️ По всем вопросам, а так же для получения доступа к панели администратора пишите @y_thirteen_y
+"""
+
 
 
 @main_router.message(CommandStart())
@@ -43,7 +47,7 @@ async def cmd_start(message: types.Message, config: Config, bot: Bot):
     logger.info(f"{config.tg_bot.web_app_url}")
     await message.answer(
         text,
-        reply_markup=webapp_kb_inline(url=config.tg_bot.web_app_url)
+        reply_markup=webapp_kb_inline(url=config.tg_bot.web_app_url, admin_panel_url=config.tg_bot.admin_panel_url)
     )
 
     # await message.answer(

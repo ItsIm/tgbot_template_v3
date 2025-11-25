@@ -13,6 +13,7 @@ class TgBot:
     token: str
     use_redis: bool
     web_app_url: str
+    admin_panel_url: str
 
     @staticmethod
     def from_env(env: Env):
@@ -22,7 +23,8 @@ class TgBot:
         token = env.str("BOT_TOKEN")
         use_redis = env.bool("USE_REDIS")
         web_app_url = env.str("WEB_APP_URL")
-        return TgBot(token=token, use_redis=use_redis, web_app_url=web_app_url)
+        admin_panel_url = env.str("ADMIN_PANEL_URL")
+        return TgBot(token=token, use_redis=use_redis, web_app_url=web_app_url, admin_panel_url=admin_panel_url)
 
 
 @dataclass
