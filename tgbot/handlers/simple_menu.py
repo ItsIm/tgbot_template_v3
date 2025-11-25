@@ -1,78 +1,61 @@
-from aiogram import Router, F
-from aiogram.enums import ParseMode
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
-from aiogram.utils.formatting import as_section, as_key_value, as_marked_list
+from aiogram import Router, types, Bot
+from aiogram.filters import CommandStart
 
-from tgbot.keyboards.inline import simple_menu_keyboard, my_orders_keyboard, \
-    OrderCallbackData
+import logging
 
-menu_router = Router()
+from tgbot.config import Config
+from tgbot.keyboards.inline import webapp_kb_inline
+from tgbot.keyboards.reply import reply_webapp_kb
 
-
-@menu_router.message(Command("menu"))
-async def show_menu(message: Message):
-    await message.answer("Выберите пункт меню:", reply_markup=simple_menu_keyboard())
+main_router = Router()
+logger = logging.getLogger(__name__)
 
 
-# Мы можем использовать фильтр F.data для фильтрации callback запросов по полю data из объекта CallbackQuery
-@menu_router.callback_query(F.data == "create_order")
-async def create_order(query: CallbackQuery):
-    # Сначала всегда отвечаем на callback запрос (как требует API Telegram)
-    await query.answer()
+text = """🛍 <b>Интернет-магазин в формате Telegram-бота и MiniApp для eCommerce</b>
 
-    # Этот метод отправит ответ на сообщение с кнопкой, которую нажал пользователь
-    # Здесь query - это объект CallbackQuery, который содержит message: объект Message
-    await query.message.answer("Вы выбрали создание заказа!")
+Наше решение сочетает удобство классического интернет-магазина и мобильного приложения — всё внутри Telegram.
+Бот приветствует пользователей, переводит в MiniApp, отправляет рассылки и уведомляет о статусах заказов.
 
-    # Вы также можете отредактировать сообщение новым текстом
-    # await query.message.edit_text("Вы выбрали создание заказа!")
+✨ <b>Функционал</b>
 
+👤 <b>Клиентская часть</b>  
+🔎 Поиск по товарам  
+📦 Варианты, фото, описания  
+🛒 Корзина, оплата (наличные, карта, ЮMoney)  
+🚚 Самовывоз и доставка через apiShip  
+👛 Личный кабинет
 
-# Давайте создадим простой список заказов для демонстрации
-ORDERS = [
-    {"id": 1, "title": "Заказ 1", "status": "Выполняется"},
-    {"id": 2, "title": "Заказ 2", "status": "Выполнен"},
-    {"id": 3, "title": "Заказ 3", "status": "Выполнен"},
-]
+🛠 <b>Админ-панель</b>  
+🎨 Управление баннерами и товарами  
+💳 Способы оплаты  
+🔗 Интеграции (apiShip, МойСклад — в разработке)  
+📢 Рассылки (в разработке)
 
+🚀 Приложение постоянно развивается — появляются новые фичи, улучшения и интеграции.  
+💡 Любые доработки и интеграции можно добавить по запросу.
 
-@menu_router.callback_query(F.data == "my_orders")
-async def my_orders(query: CallbackQuery):
-    await query.answer()
-    await query.message.edit_text("Вы выбрали просмотр ваших заказов!",
-                                  reply_markup=my_orders_keyboard(ORDERS))
+📱 <b>Открывай MiniApp и начинай покупки!</b>"""
 
 
-# Для фильтрации callback данных, которые были созданы с помощью фабрики CallbackData, можно использовать метод .filter()
-@menu_router.callback_query(OrderCallbackData.filter())
-async def show_order(query: CallbackQuery, callback_data: OrderCallbackData):
-    await query.answer()
+@main_router.message(CommandStart())
+async def cmd_start(message: types.Message, config: Config, bot: Bot):
+    logger.info(f"Нажатие {message.from_user.id}")
+    logger.info(f"{config.tg_bot.web_app_url}")
+    await message.answer(
+        text,
+        reply_markup=webapp_kb_inline(url=config.tg_bot.web_app_url)
+    )
 
-    # Вы можете получить данные из объекта callback_data как атрибуты
-    order_id = callback_data.order_id
+    # await message.answer(
+    #     "This is text button webapp!",
+    #     reply_markup=reply_webapp_kb(url=config.tg_bot.web_app_url)
+    # )
 
-    # Затем вы можете получить заказ из вашей базы данных (здесь мы используем простой список)
-    order_info = next((order for order in ORDERS if order["id"] == order_id), None)
-
-    if order_info:
-        # Здесь мы используем aiogram.utils.formatting для форматирования текста
-        # https://docs.aiogram.dev/en/latest/utils/formatting.html
-        text = as_section(
-            as_key_value("Заказ #", order_info["id"]),
-            as_marked_list(
-                as_key_value("Товар", order_info["title"]),
-                as_key_value("Статус", order_info["status"]),
-            ),
+    await bot.set_chat_menu_button(
+        chat_id=message.from_user.id,
+        menu_button=types.MenuButtonWebApp(
+            text="Открыть магазин", web_app=types.WebAppInfo(url=config.tg_bot.web_app_url)
         )
-        # Пример:
-        # Заказ #: 2
-        # - Товар: Заказ 2
-        # - Статус: Выполнен
+    )
 
-        await query.message.edit_text(text.as_html(), parse_mode=ParseMode.HTML)
 
-        # Вы также можете использовать MarkdownV2:
-        # await query.message.edit_text(text.as_markdown(), parse_mode=ParseMode.MARKDOWN_V2)
-    else:
-        await query.message.edit_text("Заказ не найден!")

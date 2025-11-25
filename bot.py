@@ -3,6 +3,7 @@ import logging
 
 import betterlogging as bl
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
@@ -12,8 +13,8 @@ from tgbot.middlewares.config import ConfigMiddleware
 from tgbot.services import broadcaster
 
 
-async def on_startup(bot: Bot, admin_ids: list[int]):
-    await broadcaster.broadcast(bot, admin_ids, "Бот был запущен")
+# async def on_startup(bot: Bot, admin_ids: list[int]):
+#     await broadcaster.broadcast(bot, admin_ids, "Бот был запущен")
 
 
 def register_global_middlewares(dp: Dispatcher, config: Config, session_pool=None):
@@ -29,7 +30,6 @@ def register_global_middlewares(dp: Dispatcher, config: Config, session_pool=Non
     """
     middleware_types = [
         ConfigMiddleware(config),
-        # DatabaseMiddleware(session_pool),
     ]
 
     for middleware_type in middleware_types:
@@ -58,6 +58,8 @@ def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format="%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s",
+        filename="bot.log",
+        filemode="a"
     )
     logger = logging.getLogger(__name__)
     logger.info("Starting bot")
@@ -89,14 +91,13 @@ async def main():
     config = load_config(".env")
     storage = get_storage(config)
 
-    bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
+    bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode='HTML'))
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(*routers_list)
 
     register_global_middlewares(dp, config)
 
-    await on_startup(bot, config.tg_bot.admin_ids)
     await dp.start_polling(bot)
 
 
