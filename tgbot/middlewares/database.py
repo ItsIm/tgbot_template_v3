@@ -16,6 +16,7 @@ class DatabaseMiddleware(BaseMiddleware):
         event: Message,
         data: Dict[str, Any],
     ) -> Any:
+
         async with self.session_pool() as session:
             repo = RequestsRepo(session)
 
